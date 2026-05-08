@@ -1,0 +1,40 @@
+# Secure Cloud-Native Application Deployment on AWS EKS
+
+## Project Overview
+
+This project deploys and secures a simplified cloud-native application on AWS using Amazon EKS. The focus is on security controls rather than complex application development.
+
+## Architecture
+
+- Frontend: nginx exposed using LoadBalancer
+- Backend: nginx exposed internally using ClusterIP
+- Kubernetes Secret: stores dummy database credentials
+- RBAC: restricts student-user permissions
+- NetworkPolicy: intended to restrict backend access
+- CloudWatch: enabled for EKS logging
+
+## Tools Used
+
+- AWS EKS
+- eksctl
+- kubectl
+- AWS CloudShell
+- Kubernetes YAML manifests
+- CloudWatch
+
+## Files
+
+- cluster.yaml
+- app.yaml
+- network-policy.yaml
+- deny-all.yaml
+- rbac.yaml
+- least-privilege-policy.json
+- commands.txt
+
+## Deployment Steps
+
+```bash
+eksctl create cluster -f cluster.yaml
+kubectl apply -f app.yaml
+kubectl get all -n secure-demo

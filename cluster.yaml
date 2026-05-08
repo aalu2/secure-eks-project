@@ -1,0 +1,19 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: secure-eks-demo
+  region: us-east-2
+  version: "1.30"
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["api", "audit", "authenticator"]
+
+managedNodeGroups:
+  - name: ng-small
+    instanceType: t3.small
+    desiredCapacity: 2
+    minSize: 1
+    maxSize: 2
+    volumeSize: 20

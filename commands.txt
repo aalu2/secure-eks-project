@@ -1,0 +1,75 @@
+# Move to project folder
+cd ~/secure-eks-project
+
+# Create EKS cluster
+eksctl create cluster -f cluster.yaml
+
+# Verify cluster
+kubectl get nodes
+kubectl get pods -A
+
+# Deploy application
+kubectl apply -f app.yaml
+
+# Check application
+kubectl get all -n secure-demo
+kubectl get svc frontend-service -n secure-demo
+kubectl get svc backend-service -n secure-demo
+
+# Create attacker pod
+kubectl run attacker --image=busybox -n secure-demo --restart=Never -- sleep 3600
+
+# Test attacker access to backend before NetworkPolicy
+kubectl exec -n secure-demo attacker -- wget -qO- backend-service
+
+# Apply NetworkPolicy
+kubectl apply -f network-policy.yaml
+
+# Apply default deny ingress policy
+kubectl apply -f deny-all.yaml
+
+# Check NetworkPolicies
+kubectl get networkpolicy -n secure-demo
+kubectl describe networkpolicy backend-allow-only-frontend -n secure-demo
+
+# Test attacker again
+kubectl exec -n secure-demo attacker -- wget -qO- --timeout=5 backend-service
+
+# Apply RBAC
+kubectl apply -f rbac.yaml
+
+# Verify RBAC objects
+kubectl get serviceaccount -n secure-demo
+kubectl get role -n secure-demo
+kubectl get rolebinding -n secure-demo
+
+# RBAC permission tests
+kubectl auth can-i list pods --as=system:serviceaccount:secure-demo:student-user -n secure-demo
+kubectl auth can-i delete pods --as=system:serviceaccount:secure-demo:student-user -n secure-demo
+kubectl auth can-i create deployments --as=system:serviceaccount:secure-demo:student-user -n secure-demo
+
+# Check Secret
+kubectl get secret app-secret -n secure-demo
+kubectl describe secret app-secret -n secure-demo
+kubectl describe deployment backend -n secure-demo
+kubectl exec -n secure-demo deployment/backend -- printenv | grep DB_
+
+# Check AWS networking
+aws eks describe-cluster --name secure-eks-demo --region us-east-2 --query "cluster.resourcesVpcConfig"
+
+aws ec2 describe-security-groups --group-ids sg-02007c427eef0ba73 sg-05db325f40ab2a6af
+
+aws ec2 describe-network-acls --filters "Name=vpc-id,Values=vpc-03c325c0c0886ef04"
+
+# Check monitoring
+aws eks describe-cluster --name secure-eks-demo --region us-east-2 --query "cluster.logging"
+
+kubectl logs deployment/frontend -n secure-demo
+kubectl logs deployment/backend -n secure-demo
+
+# IAM verification
+aws sts get-caller-identity
+aws eks list-clusters --region us-east-2
+
+# Cleanup after project
+eksctl delete cluster --name secure-eks-demo --region us-east-2
